@@ -5,6 +5,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,14 +19,19 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.edwardjdp.pointofuapp.data.repository.MongoDB
+import com.edwardjdp.pointofuapp.model.Mood
 import com.edwardjdp.pointofuapp.presentation.components.DisplayAlertDialog
 import com.edwardjdp.pointofuapp.presentation.screens.auth.AuthenticationScreen
 import com.edwardjdp.pointofuapp.presentation.screens.auth.AuthenticationViewModel
 import com.edwardjdp.pointofuapp.presentation.screens.home.HomeScreen
 import com.edwardjdp.pointofuapp.presentation.screens.home.HomeViewModel
+import com.edwardjdp.pointofuapp.presentation.screens.write.WriteScreen
+import com.edwardjdp.pointofuapp.presentation.screens.write.WriteViewModel
 import com.edwardjdp.pointofuapp.util.Constants.APP_ID
 import com.edwardjdp.pointofuapp.util.Constants.WRITE_SCREEN_ARGUMENT_KEY
 import com.edwardjdp.pointofuapp.util.RequestState
+import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.accompanist.pager.rememberPagerState
 import com.stevdzasan.messagebar.rememberMessageBarState
 import com.stevdzasan.onetap.rememberOneTapSignInState
 import io.realm.kotlin.mongodb.App
@@ -54,13 +60,20 @@ fun SetupNavGraph(
             navigateToWrite = {
                 navController.navigate(Screen.Write.route)
             },
+            navigateToWriteWithArgs = { id ->
+                navController.navigate(Screen.Write.passJournalId(journalId = id))
+            },
             navigateToAuth = {
                 navController.popBackStack()
                 navController.navigate(Screen.Authentication.route)
             },
             onDataLoaded = onDataLoaded
         )
-        writeRoute()
+        writeRoute(
+            onBackPressed = {
+                navController.popBackStack()
+            }
+        )
     }
 }
 
@@ -112,6 +125,7 @@ fun NavGraphBuilder.authenticationRoute(
 
 fun NavGraphBuilder.homeRoute(
     navigateToWrite: () -> Unit,
+    navigateToWriteWithArgs: (String) -> Unit,
     navigateToAuth: () -> Unit,
     onDataLoaded: () -> Unit,
 ) {
@@ -139,7 +153,8 @@ fun NavGraphBuilder.homeRoute(
             onSignOutClicked = {
                 signOutDialogOpened = true
             },
-            navigateToWrite = navigateToWrite
+            navigateToWrite = navigateToWrite,
+            navigateToWriteWithArgs = navigateToWriteWithArgs,
         )
 
         LaunchedEffect(key1 = Unit) {
@@ -166,7 +181,10 @@ fun NavGraphBuilder.homeRoute(
     }
 }
 
-fun NavGraphBuilder.writeRoute() {
+@OptIn(ExperimentalPagerApi::class)
+fun NavGraphBuilder.writeRoute(
+    onBackPressed: () -> Unit,
+) {
     composable(
         route = Screen.Write.route,
         arguments = listOf(
@@ -177,6 +195,19 @@ fun NavGraphBuilder.writeRoute() {
             },
         )
     ) {
+        val viewModel: WriteViewModel = viewModel()
+        val uiState = viewModel.uiState
+        val pagerState = rememberPagerState()
+        val pageNumber by remember { derivedStateOf { pagerState.currentPage } }
 
+        WriteScreen(
+            uiState = uiState,
+            moodName = { Mood.values()[pageNumber].name  },
+            pagerState = pagerState,
+            onTitleChanged = { viewModel.setTitle(title = it) },
+            onDescriptionChanged = { viewModel.setDescription(description = it) },
+            onDeleteConfirmed = {},
+            onBackPressed = onBackPressed
+        )
     }
 }
