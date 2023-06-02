@@ -1,5 +1,6 @@
 package com.edwardjdp.pointofuapp.navigation
 
+import android.widget.Toast
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberDrawerState
@@ -11,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -195,6 +197,7 @@ fun NavGraphBuilder.writeRoute(
             },
         )
     ) {
+        val context = LocalContext.current
         val viewModel: WriteViewModel = viewModel()
         val uiState = viewModel.uiState
         val pagerState = rememberPagerState()
@@ -206,8 +209,31 @@ fun NavGraphBuilder.writeRoute(
             pagerState = pagerState,
             onTitleChanged = { viewModel.setTitle(title = it) },
             onDescriptionChanged = { viewModel.setDescription(description = it) },
-            onDeleteConfirmed = {},
-            onBackPressed = onBackPressed
+            onDateTimeUpdated = {
+                viewModel.updateDateTime(zonedDateTime = it)
+            },
+            onDeleteConfirmed = {
+                viewModel.deleteJournal(
+                    onSuccess = {
+                        Toast.makeText(context, "Deleted...", Toast.LENGTH_SHORT).show()
+                        onBackPressed()
+                    },
+                    onError = { message ->
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        onBackPressed()
+                    }
+                )
+            },
+            onBackPressed = onBackPressed,
+            onSaveClicked = {  journal ->
+                viewModel.upsertJournal(
+                    journal = journal.apply { mood = Mood.values()[pageNumber].name },
+                    onSuccess = { onBackPressed() },
+                    onError = { message ->
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    },
+                )
+            }
         )
     }
 }

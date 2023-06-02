@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -26,9 +27,17 @@ import androidx.compose.ui.text.style.TextAlign
 import com.edwardjdp.pointofuapp.model.Journal
 import com.edwardjdp.pointofuapp.presentation.components.DisplayAlertDialog
 import com.edwardjdp.pointofuapp.util.toInstant
+import com.maxkeppeker.sheets.core.models.base.rememberSheetState
+import com.maxkeppeler.sheets.calendar.CalendarDialog
+import com.maxkeppeler.sheets.calendar.models.CalendarConfig
+import com.maxkeppeler.sheets.calendar.models.CalendarSelection
+import com.maxkeppeler.sheets.clock.ClockDialog
+import com.maxkeppeler.sheets.clock.models.ClockSelection
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
@@ -38,10 +47,13 @@ import java.util.Locale
 fun WriteTopBar(
     selectedJournal: Journal?,
     moodName: () -> String,
+    onDateTimeUpdated: (ZonedDateTime) -> Unit,
     onDeleteConfirmed: () -> Unit,
     onBackPressed: () -> Unit,
 ) {
-    val currentDate by remember { mutableStateOf(LocalDate.now()) }
+    val dateDialog = rememberSheetState()
+    val timeDialog = rememberSheetState()
+    var currentDate by remember { mutableStateOf(LocalDate.now()) }
     val formattedDate = remember(currentDate) {
         DateTimeFormatter
             .ofPattern("dd MMM yyyy")
@@ -49,7 +61,7 @@ fun WriteTopBar(
             .uppercase()
     }
 
-    val currentTime by remember { mutableStateOf(LocalTime.now()) }
+    var currentTime by remember { mutableStateOf(LocalTime.now()) }
     val formattedTime = remember(currentTime) {
         DateTimeFormatter
             .ofPattern("hh:mm a")
@@ -57,6 +69,9 @@ fun WriteTopBar(
             .uppercase()
     }
 
+    var dateTimeUpdated by remember {
+        mutableStateOf(false)
+    }
     val selectedJournalDateTime = remember(selectedJournal) {
         if (selectedJournal != null) {
             SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
@@ -88,19 +103,44 @@ fun WriteTopBar(
                 )
                 Text(
                     modifier = Modifier.fillMaxWidth(),
-                    text = if (selectedJournal != null) selectedJournalDateTime else "$formattedDate, $formattedTime",
+                    text = if (selectedJournal != null && dateTimeUpdated) "$formattedDate, $formattedTime"
+                    else if (selectedJournal != null) selectedJournalDateTime
+                    else "$formattedDate, $formattedTime",
                     style = TextStyle(fontSize = MaterialTheme.typography.bodySmall.fontSize),
                     textAlign = TextAlign.Center
                 )
             }
         },
         actions = {
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.DateRange,
-                    contentDescription = "Date Icon",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+            if (dateTimeUpdated) {
+                IconButton(onClick = {
+                    currentDate = LocalDate.now()
+                    currentTime = LocalTime.now()
+                    dateTimeUpdated = false
+                    onDateTimeUpdated(
+                        ZonedDateTime.of(
+                            currentDate,
+                            currentTime,
+                            ZoneId.systemDefault()
+                        )
+                    )
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close Icon",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            } else {
+                IconButton(onClick = {
+                    dateDialog.show()
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.DateRange,
+                        contentDescription = "Date Icon",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
             if (selectedJournal != null) {
                 DeleteJournalAction(
@@ -108,6 +148,33 @@ fun WriteTopBar(
                     onDeleteConfirmed = onDeleteConfirmed
                 )
             }
+        }
+    )
+    
+    CalendarDialog(
+        state = dateDialog,
+        selection = CalendarSelection.Date { localDate ->
+            currentDate = localDate
+            timeDialog.show()
+        },
+        config = CalendarConfig(
+            monthSelection = true,
+            yearSelection = true,
+        )
+    )
+
+    ClockDialog(
+        state = timeDialog,
+        selection = ClockSelection.HoursMinutes { hours, minutes ->
+            currentTime = LocalTime.of(hours, minutes)
+            dateTimeUpdated = true
+            onDateTimeUpdated(
+                ZonedDateTime.of(
+                    currentDate,
+                    currentTime,
+                    ZoneId.systemDefault()
+                )
+            )
         }
     )
 }

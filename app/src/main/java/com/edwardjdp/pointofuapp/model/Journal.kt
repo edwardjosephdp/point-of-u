@@ -1,11 +1,13 @@
 package com.edwardjdp.pointofuapp.model
 
+import com.edwardjdp.pointofuapp.util.toRealmInstant
 import io.realm.kotlin.ext.realmListOf
 import io.realm.kotlin.types.ObjectId
 import io.realm.kotlin.types.RealmInstant
 import io.realm.kotlin.types.RealmList
 import io.realm.kotlin.types.RealmObject
 import io.realm.kotlin.types.annotations.PrimaryKey
+import java.time.Instant
 
 open class Journal: RealmObject {
     @PrimaryKey
@@ -15,5 +17,5 @@ open class Journal: RealmObject {
     var title: String = ""
     var description: String = ""
     var images: RealmList<String> = realmListOf()
-    var date: RealmInstant = RealmInstant.from(System.currentTimeMillis(), 0)
+    var date: RealmInstant = Instant.now().toRealmInstant()
 }

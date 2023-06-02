@@ -75,19 +75,77 @@ object MongoDB : MongoRepository {
         }
     }
 
-    override fun getSelectedJournal(id: ObjectId): RequestState<Journal> {
+    override fun getSelectedJournal(id: ObjectId): Flow<RequestState<Journal>> {
         return if (user != null) {
             try {
-                val journal = realm.query<Journal>(query = "_id == $0", id).find().first()
-                RequestState.Success(data = journal)
+                realm.query<Journal>(query = "_id == $0", id).asFlow().map {
+                    RequestState.Success(data = it.list.first())
+                }
             } catch (e: Exception) {
-                RequestState.Error(e)
+                flow { emit(RequestState.Error(e)) }
+            }
+        } else {
+            flow { emit(RequestState.Error(UserAuthenticationError())) }
+        }
+    }
+
+    override suspend fun insertJournal(journal: Journal): RequestState<Journal> {
+        return if (user != null) {
+            realm.write {
+                try {
+                    val addedJournal = copyToRealm(journal.apply { ownerId = user.id })
+                    RequestState.Success(data = addedJournal)
+                } catch (e: Exception) {
+                    RequestState.Error(e)
+                }
+            }
+        } else {
+            RequestState.Error(UserAuthenticationError())
+        }
+    }
+
+    override suspend fun updateJournal(journal: Journal): RequestState<Journal> {
+        return if (user != null) {
+            realm.write {
+                val queriedJournal = query<Journal>(query = "_id == $0", journal._id).first().find()
+                if (queriedJournal != null) {
+                    queriedJournal.title = journal.title
+                    queriedJournal.description = journal.description
+                    queriedJournal.mood = journal.mood
+                    queriedJournal.images = journal.images
+                    queriedJournal.date = journal.date
+                    RequestState.Success(data = queriedJournal)
+                } else {
+                    RequestState.Error(error = Throwable("Queried journal not found."))
+                }
+            }
+        } else {
+            RequestState.Error(UserAuthenticationError())
+        }
+    }
+
+    override suspend fun deleteJournal(journalId: ObjectId): RequestState<Journal> {
+        return if (user != null) {
+            realm.write {
+                val queriedJournal = query<Journal>(
+                    query = "_id == $0 AND ownerId == $1", journalId, user.id
+                ).first().find()
+
+                if (queriedJournal != null) {
+                    try {
+                        delete(queriedJournal)
+                        RequestState.Success(data = queriedJournal)
+                    } catch (e: Exception) {
+                        RequestState.Error(e)
+                    }
+                } else {
+                    RequestState.Error(error = Throwable("Queried journal not found."))
+                }
             }
         } else {
             RequestState.Error(UserAuthenticationError())
         }
     }
 }
-
 
 private class UserAuthenticationError(): Exception("User is not logged in.")
