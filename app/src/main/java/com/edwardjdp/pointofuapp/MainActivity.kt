@@ -10,6 +10,7 @@ import com.edwardjdp.pointofuapp.navigation.Screen
 import com.edwardjdp.pointofuapp.navigation.SetupNavGraph
 import com.edwardjdp.pointofuapp.ui.theme.PointOfUAppTheme
 import com.edwardjdp.pointofuapp.util.Constants.APP_ID
+import com.google.firebase.FirebaseApp
 import io.realm.kotlin.mongodb.App
 
 class MainActivity : ComponentActivity() {
@@ -17,6 +18,7 @@ class MainActivity : ComponentActivity() {
     var keepSplashOpen = true
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
         installSplashScreen().setKeepOnScreenCondition {
             keepSplashOpen
         }

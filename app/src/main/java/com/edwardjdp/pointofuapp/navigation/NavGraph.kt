@@ -31,7 +31,7 @@ import com.edwardjdp.pointofuapp.presentation.screens.write.WriteScreen
 import com.edwardjdp.pointofuapp.presentation.screens.write.WriteViewModel
 import com.edwardjdp.pointofuapp.util.Constants.APP_ID
 import com.edwardjdp.pointofuapp.util.Constants.WRITE_SCREEN_ARGUMENT_KEY
-import com.edwardjdp.pointofuapp.util.RequestState
+import com.edwardjdp.pointofuapp.model.RequestState
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.rememberPagerState
 import com.stevdzasan.messagebar.rememberMessageBarState
@@ -103,7 +103,7 @@ fun NavGraphBuilder.authenticationRoute(
                 oneTapState.open()
                 viewModel.setLoading(true)
             },
-            onTokenIdReceived = { tokenId ->
+            onSuccessfulFirebaseSignIn = { tokenId ->
                 viewModel.signInWithMongoAtlas(
                     tokenId = tokenId,
                     onSuccess = {
@@ -115,6 +115,10 @@ fun NavGraphBuilder.authenticationRoute(
                         viewModel.setLoading(false)
                     }
                 )
+            },
+            onFailedFirebaseSignIn = { exception ->
+                messageBarState.addError(exception)
+                viewModel.setLoading(false)
             },
             onDialogDismissed = { message ->
                 messageBarState.addError(Exception(message))
@@ -201,12 +205,14 @@ fun NavGraphBuilder.writeRoute(
         val viewModel: WriteViewModel = viewModel()
         val uiState = viewModel.uiState
         val pagerState = rememberPagerState()
+        val galleryState = viewModel.galleryState
         val pageNumber by remember { derivedStateOf { pagerState.currentPage } }
 
         WriteScreen(
             uiState = uiState,
             moodName = { Mood.values()[pageNumber].name  },
             pagerState = pagerState,
+            galleryState = galleryState,
             onTitleChanged = { viewModel.setTitle(title = it) },
             onDescriptionChanged = { viewModel.setDescription(description = it) },
             onDateTimeUpdated = {
@@ -233,6 +239,10 @@ fun NavGraphBuilder.writeRoute(
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     },
                 )
+            },
+            onImageSelect = {
+                val type = context.contentResolver.getType(it)?.split("/")?.last() ?: "jpg"
+                viewModel.addImage(image = it, imageType = type)
             }
         )
     }

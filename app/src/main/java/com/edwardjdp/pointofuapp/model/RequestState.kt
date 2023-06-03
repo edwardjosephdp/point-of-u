@@ -1,4 +1,4 @@
-package com.edwardjdp.pointofuapp.util
+package com.edwardjdp.pointofuapp.model
 
 sealed class RequestState<out T> {
     object Idle: RequestState<Nothing>()

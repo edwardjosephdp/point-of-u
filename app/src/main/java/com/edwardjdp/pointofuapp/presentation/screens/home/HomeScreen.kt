@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.edwardjdp.pointofuapp.R
 import com.edwardjdp.pointofuapp.data.repository.Journals
-import com.edwardjdp.pointofuapp.util.RequestState
+import com.edwardjdp.pointofuapp.model.RequestState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")

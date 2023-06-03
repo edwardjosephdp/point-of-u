@@ -1,5 +1,6 @@
 package com.edwardjdp.pointofuapp.presentation.screens.write
 
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,11 +35,14 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.edwardjdp.pointofuapp.model.GalleryState
 import com.edwardjdp.pointofuapp.model.Journal
 import com.edwardjdp.pointofuapp.model.Mood
+import com.edwardjdp.pointofuapp.presentation.components.GalleryUploader
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
+import io.realm.kotlin.ext.toRealmList
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPagerApi::class, ExperimentalMaterial3Api::class)
@@ -46,12 +50,14 @@ import kotlinx.coroutines.launch
 fun WriteContent(
     uiState: UiState,
     pagerState: PagerState,
+    galleryState: GalleryState,
     title: String,
     onTitleChanged: (String) -> Unit,
     description: String,
     onDescriptionChanged: (String) -> Unit,
     paddingValues: PaddingValues,
     onSaveClicked: (Journal) -> Unit,
+    onImageSelect: (Uri) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -132,7 +138,8 @@ fun WriteContent(
                     disabledIndicatorColor = Color.Unspecified,
                     unfocusedIndicatorColor = Color.Unspecified,
                     focusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(0.38f),
-                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(0.38f),                ),
+                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(0.38f),
+                ),
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Done
                 ),
@@ -143,8 +150,15 @@ fun WriteContent(
                 )
             )
         }
-        
+
         Column(verticalArrangement = Arrangement.Bottom) {
+            Spacer(modifier = Modifier.height(12.dp))
+            GalleryUploader(
+                galleryState = galleryState,
+                onAddClicked = { focusManager.clearFocus() },
+                onImageSelect = onImageSelect,
+                onImageClicked = {}
+            )
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 modifier = Modifier
@@ -157,6 +171,7 @@ fun WriteContent(
                             Journal().apply {
                                 this.title = uiState.title
                                 this.description = uiState.description
+                                this.images = galleryState.images.map { it.remoteImagePath }.toRealmList()
                             }
                         )
                     } else {

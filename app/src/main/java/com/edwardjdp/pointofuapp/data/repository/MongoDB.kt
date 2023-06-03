@@ -2,7 +2,7 @@ package com.edwardjdp.pointofuapp.data.repository
 
 import com.edwardjdp.pointofuapp.model.Journal
 import com.edwardjdp.pointofuapp.util.Constants.APP_ID
-import com.edwardjdp.pointofuapp.util.RequestState
+import com.edwardjdp.pointofuapp.model.RequestState
 import com.edwardjdp.pointofuapp.util.toInstant
 import io.realm.kotlin.Realm
 import io.realm.kotlin.ext.query

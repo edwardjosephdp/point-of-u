@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.edwardjdp.pointofuapp.data.repository.Journals
 import com.edwardjdp.pointofuapp.data.repository.MongoDB
-import com.edwardjdp.pointofuapp.util.RequestState
+import com.edwardjdp.pointofuapp.model.RequestState
 import kotlinx.coroutines.launch
 
 class HomeViewModel : ViewModel() {
