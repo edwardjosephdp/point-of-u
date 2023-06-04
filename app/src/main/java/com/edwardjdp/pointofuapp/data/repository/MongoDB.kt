@@ -11,10 +11,12 @@ import io.realm.kotlin.mongodb.App
 import io.realm.kotlin.mongodb.sync.SyncConfiguration
 import io.realm.kotlin.query.Sort
 import io.realm.kotlin.types.ObjectId
+import io.realm.kotlin.types.RealmInstant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 object MongoDB : MongoRepository {
 
@@ -67,6 +69,32 @@ object MongoDB : MongoRepository {
                             }
                         )
                     }
+            } catch (e: java.lang.Exception) {
+                flow { emit(RequestState.Error(e)) }
+            }
+        } else {
+            flow { emit(RequestState.Error(UserAuthenticationError())) }
+        }
+    }
+
+    override fun getFilteredJournals(zonedDateTime: ZonedDateTime): Flow<Journals> {
+        return if (user != null) {
+            try {
+                realm.query<Journal>(
+                    "ownerId == $0 AND date < $1 AND date > $2",
+                    user.id,
+                    RealmInstant.from(zonedDateTime.plusDays(1).toInstant().epochSecond, 0),
+                    RealmInstant.from(zonedDateTime.minusDays(1).toInstant().epochSecond, 0),
+                ).asFlow().map { result ->
+                    RequestState.Success(
+                        data = result.list.groupBy {
+                            it.date
+                                .toInstant()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                        }
+                    )
+                }
             } catch (e: java.lang.Exception) {
                 flow { emit(RequestState.Error(e)) }
             }

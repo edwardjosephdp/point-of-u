@@ -17,8 +17,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.ZonedDateTime
 import javax.inject.Inject
 
 @HiltViewModel
@@ -27,19 +30,49 @@ class HomeViewModel @Inject constructor(
     private val imageToDeleteDAO: ImageToDeleteDAO,
 ) : ViewModel() {
 
+    private lateinit var allJournalsJob: Job
+    private lateinit var filteredJournalsJob: Job
+
     private var network by mutableStateOf(ConnectivityObserver.Status.Unavailable)
     var journals: MutableState<Journals> = mutableStateOf(RequestState.Idle)
+    var dateIsSelected by mutableStateOf(false)
+        private set
 
     init {
-        observeAllJournals()
+        getJournals()
         viewModelScope.launch {
             connectivity.observe().collect { network = it }
         }
     }
 
+    fun getJournals(zonedDateTime: ZonedDateTime? = null) {
+        dateIsSelected = zonedDateTime != null
+        journals.value = RequestState.Loading
+        if (dateIsSelected && zonedDateTime != null) {
+            observeFilteredJournals(zonedDateTime = zonedDateTime)
+        } else {
+            observeAllJournals()
+        }
+    }
+
+
     private fun observeAllJournals() {
-        viewModelScope.launch {
+        allJournalsJob = viewModelScope.launch {
+            if (::filteredJournalsJob.isInitialized) {
+                filteredJournalsJob.cancelAndJoin()
+            }
             MongoDB.getAllJournals().collect { result ->
+                journals.value = result
+            }
+        }
+    }
+
+    private fun observeFilteredJournals(zonedDateTime: ZonedDateTime) {
+        filteredJournalsJob = viewModelScope.launch {
+            if (::allJournalsJob.isInitialized) {
+                allJournalsJob.cancelAndJoin()
+            }
+            MongoDB.getFilteredJournals(zonedDateTime = zonedDateTime).collect { result ->
                 journals.value = result
             }
         }

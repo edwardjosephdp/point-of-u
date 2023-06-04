@@ -5,6 +5,7 @@ import com.edwardjdp.pointofuapp.model.RequestState
 import io.realm.kotlin.types.ObjectId
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
+import java.time.ZonedDateTime
 
 typealias Journals = RequestState<Map<LocalDate, List<Journal>>>
 
@@ -13,6 +14,8 @@ interface MongoRepository {
     fun configureTheRealm()
 
     fun getAllJournals(): Flow<Journals>
+
+    fun getFilteredJournals(zonedDateTime: ZonedDateTime): Flow<Journals>
 
     fun getSelectedJournal(id: ObjectId): Flow<RequestState<Journal>>
 
