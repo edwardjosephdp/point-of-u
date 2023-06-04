@@ -35,6 +35,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.edwardjdp.pointofuapp.model.GalleryImage
 import com.edwardjdp.pointofuapp.model.GalleryState
 import com.edwardjdp.pointofuapp.model.Journal
 import com.edwardjdp.pointofuapp.model.Mood
@@ -58,6 +59,7 @@ fun WriteContent(
     paddingValues: PaddingValues,
     onSaveClicked: (Journal) -> Unit,
     onImageSelect: (Uri) -> Unit,
+    onImageClicked: (GalleryImage) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -157,7 +159,7 @@ fun WriteContent(
                 galleryState = galleryState,
                 onAddClicked = { focusManager.clearFocus() },
                 onImageSelect = onImageSelect,
-                onImageClicked = {}
+                onImageClicked = onImageClicked,
             )
             Spacer(modifier = Modifier.height(12.dp))
             Button(

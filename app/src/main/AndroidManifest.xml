@@ -4,6 +4,7 @@
 
     <application
         android:allowBackup="true"
+        android:name=".PointOfUApplication"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -15,6 +16,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.PointOfUApp.AppSplash">
             <intent-filter>
