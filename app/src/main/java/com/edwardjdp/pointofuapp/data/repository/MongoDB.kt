@@ -146,6 +146,22 @@ object MongoDB : MongoRepository {
             RequestState.Error(UserAuthenticationError())
         }
     }
+
+    override suspend fun deleteAllJournals(): RequestState<Boolean> {
+        return if (user != null) {
+            realm.write {
+                val journals = this.query<Journal>("ownerId == $0", user.id).find()
+                try {
+                    delete(journals)
+                    RequestState.Success(data = true)
+                } catch (e: Exception) {
+                    RequestState.Error(e)
+                }
+            }
+        } else {
+            RequestState.Error(UserAuthenticationError())
+        }
+    }
 }
 
 private class UserAuthenticationError(): Exception("User is not logged in.")

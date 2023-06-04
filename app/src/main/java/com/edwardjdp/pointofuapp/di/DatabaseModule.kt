@@ -2,6 +2,7 @@ package com.edwardjdp.pointofuapp.di
 
 import android.content.Context
 import androidx.room.Room
+import com.edwardjdp.pointofuapp.connectivity.NetworkConnectivityObserver
 import com.edwardjdp.pointofuapp.data.database.ImagesDatabase
 import com.edwardjdp.pointofuapp.util.Constants.IMAGE_DATABASE
 import dagger.Module
@@ -34,4 +35,10 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideSecondDao(database: ImagesDatabase) = database.imageToDeleteDao()
+
+    @Provides
+    @Singleton
+    fun provideNetworkConnectivityObserver(
+        @ApplicationContext context: Context,
+    ) = NetworkConnectivityObserver(context = context)
 }

@@ -137,11 +137,13 @@ fun NavGraphBuilder.homeRoute(
     onDataLoaded: () -> Unit,
 ) {
     composable(route = Screen.Home.route) {
-        val viewModel: HomeViewModel = viewModel()
+        val viewModel: HomeViewModel = hiltViewModel()
+        val context = LocalContext.current
         val journals by viewModel.journals
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
         var signOutDialogOpened by remember { mutableStateOf(false) }
+        var deleteAllDialogOpened by remember { mutableStateOf(false) }
 
         LaunchedEffect(key1 = journals) {
             if (journals !is RequestState.Loading) {
@@ -159,6 +161,10 @@ fun NavGraphBuilder.homeRoute(
             },
             onSignOutClicked = {
                 signOutDialogOpened = true
+            },
+            onDeleteAllClicked = {
+                deleteAllDialogOpened = true
+
             },
             navigateToWrite = navigateToWrite,
             navigateToWriteWithArgs = navigateToWriteWithArgs,
@@ -183,6 +189,38 @@ fun NavGraphBuilder.homeRoute(
                         }
                     }
                 }
+            }
+        )
+
+        DisplayAlertDialog(
+            title = "Delete All Journals",
+            message = "Are you sure you want to permanently delete all journal entries?",
+            dialogOpened = deleteAllDialogOpened,
+            onDialogClosed = { deleteAllDialogOpened = false },
+            onYesClicked = {
+                viewModel.deleteAllJournals(
+                    onSuccess = {
+                        Toast.makeText(
+                            context,
+                            "All journals deleted.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        scope.launch {
+                            drawerState.close()
+                        }
+                    },
+                    onError = {
+                        Toast.makeText(
+                            context,
+                            if (it.message == "No Internet Connection.") "We need internet connection for this operation."
+                            else it.message,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        scope.launch {
+                            drawerState.close()
+                        }
+                    }
+                )
             }
         )
     }
@@ -211,7 +249,7 @@ fun NavGraphBuilder.writeRoute(
 
         WriteScreen(
             uiState = uiState,
-            moodName = { Mood.values()[pageNumber].name  },
+            moodName = { Mood.values()[pageNumber].name },
             pagerState = pagerState,
             galleryState = galleryState,
             onTitleChanged = { viewModel.setTitle(title = it) },
@@ -232,7 +270,7 @@ fun NavGraphBuilder.writeRoute(
                 )
             },
             onBackPressed = onBackPressed,
-            onSaveClicked = {  journal ->
+            onSaveClicked = { journal ->
                 viewModel.upsertJournal(
                     journal = journal.apply { mood = Mood.values()[pageNumber].name },
                     onSuccess = { onBackPressed() },
